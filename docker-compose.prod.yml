@@ -1,0 +1,172 @@
+# Default network for all services
+networks:
+  app-network:
+    name: fantastic-spork_app-network
+    driver: bridge
+
+# Volumes for persistent data
+volumes:
+  postgres_data:
+  traefik_certs:
+  traefik_config:
+
+services:
+  # Traefik reverse proxy
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    command:
+      # Global configuration
+      - --api.dashboard=true
+      - --api.debug=true
+      - --log.level=DEBUG
+      
+      # Docker provider configuration
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=app-network
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      
+      # Entrypoints - HTTP only
+      - --entrypoints.web.address=:80
+      
+      # SSL/TLS configuration - Disabled
+      # - --entrypoints.websecure.address=:443
+      # - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      # - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      # - --entrypoints.web.http.redirections.entryPoint.permanent=true
+      # - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      # - --certificatesresolvers.le.acme.tlschallenge=true
+      # - --certificatesresolvers.le.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      # Enable access log
+      - --accesslog=true
+      - --experimental.localPlugins.templating.moduleName=github.com/traefik/plugin-templating
+      - --providers.file.filename=/path/to/middlewares.tmpl.yml  # Use .tmpl extension
+
+      # Configure forwarded headers handling
+      - --entrypoints.web.forwardedHeaders.insecure
+      - --entrypoints.web.proxyProtocol.insecure
+    ports:
+      - "80:80"  # HTTP only
+      # - "443:443"  # HTTPS disabled
+      # Dashboard port (exposed for debugging)
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/letsencrypt
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    env_file:
+      - .env.production
+    environment:
+      - APP_DOMAIN=${APP_DOMAIN}
+      - ADMIN_IPS=${ADMIN_IPS}
+      - CF_API_EMAIL=${CLOUDFLARE_EMAIL:-}
+      - CF_API_KEY=${CLOUDFLARE_API_KEY:-}
+    networks:
+      - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=admin-ipwhitelist@file"
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - app-network
+
+  # Backend server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: production
+    restart: always
+    depends_on:
+      - postgres
+    env_file:
+      - .env.production 
+    environment:
+      - SERVER_PORT=${SERVER_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - DB_POOL_MAX=${DB_POOL_MAX}
+      - DB_IDLE_TIMEOUT_MS=${DB_IDLE_TIMEOUT_MS}
+      - DB_CONNECTION_TIMEOUT_MS=${DB_CONNECTION_TIMEOUT_MS}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW}
+      - SWAGGER_FRONTEND_HOST=${SWAGGER_FRONTEND_HOST}
+      - BACKEND_HOST=${BACKEND_HOST}
+      - BACKEND_PORT=${BACKEND_PORT}
+      - API_DOMAIN=${API_DOMAIN}
+    networks:
+      - app-network
+    labels:
+      # Enable Traefik for this container
+      - "traefik.enable=true"
+      
+      # Public error submission endpoint (HTTP only) - No IP whitelist but with CORS
+      - "traefik.http.routers.api-errors.rule=Host(`${API_DOMAIN}`) && Method(`POST`) && PathPrefix(`/api/errors`)"
+      - "traefik.http.routers.api-errors.entrypoints=web"
+      - "traefik.http.routers.api-errors.service=server"
+      - "traefik.http.routers.api-errors.middlewares=cors-headers@file,ratelimit@file"
+
+      # Protected API routes (HTTP only) - With IP whitelist
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.routers.api.rule=Host(`${API_DOMAIN}`) && PathPrefix(`/api`) && !(Method(`POST`) && PathPrefix(`/api/errors`))"
+      - "traefik.http.routers.api.middlewares=cors-headers@file,ratelimit@file,admin-ipwhitelist@file"
+      - "traefik.http.routers.api.service=server"
+
+      # Service configuration
+      - "traefik.http.services.server.loadbalancer.server.port=${SERVER_PORT}"
+      - "traefik.http.services.server.loadbalancer.passhostheader=true"
+
+  # Frontend application
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      - CLIENT_PORT=${CLIENT_PORT}
+      - APP_DOMAIN=${APP_DOMAIN}
+      - VITE_API_URL=${VITE_API_URL}
+    depends_on:
+      - server
+    networks:
+      - app-network
+    labels:
+      - "traefik.enable=true"
+      # Frontend router (HTTP only)
+      - "traefik.http.routers.frontend.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      # TLS/HTTPS is disabled
+      # - "traefik.http.routers.frontend.tls.certresolver=le"
+      # - "traefik.http.routers.frontend.tls.domains[0].main=${APP_DOMAIN}"
+      - "traefik.http.routers.frontend.middlewares=cors-headers@file,admin-ipwhitelist@file"
+      - "traefik.http.services.frontend.loadbalancer.server.port=${CLIENT_PORT}"

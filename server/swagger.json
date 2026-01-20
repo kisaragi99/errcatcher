@@ -1,0 +1,769 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "My API",
+    "description": "Swagger JSON generated from Fastify routes",
+    "version": "1.0.0"
+  },
+  "definitions": {},
+  "paths": {
+    "/api/errors": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "project_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "error_message": {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                "custom_fields": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "maxProperties": 30,
+                  "propertyNames": {
+                    "maxLength": 255
+                  }
+                }
+              },
+              "required": [
+                "project_id",
+                "error_message"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "project_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "error_message": {
+                  "type": "string"
+                },
+                "custom_fields": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "project_id",
+                "error_message",
+                "created_at"
+              ]
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "required": false,
+            "in": "query",
+            "name": "project_id"
+          },
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "error_message"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "required": false,
+            "in": "query",
+            "name": "start_date"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "required": false,
+            "in": "query",
+            "name": "end_date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "project_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "error_message": {
+                        "type": "string"
+                      },
+                      "custom_fields": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "project_id",
+                      "error_message",
+                      "created_at"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "required": false,
+            "in": "query",
+            "name": "project_id"
+          },
+          {
+            "type": "string",
+            "required": false,
+            "in": "query",
+            "name": "error_message"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 10,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "required": false,
+            "in": "query",
+            "name": "start_date"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "required": false,
+            "in": "query",
+            "name": "end_date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "project_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "error_message": {
+                        "type": "string"
+                      },
+                      "custom_fields": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "project_id",
+                      "error_message",
+                      "created_at"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects": {
+      "post": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "custom_fields": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "custom_fields": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "required": false,
+            "in": "query",
+            "name": "id"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "required": false,
+            "in": "query",
+            "name": "start_date"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "required": false,
+            "in": "query",
+            "name": "end_date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "custom_fields": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "created_at"
+                ]
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "required": false,
+            "in": "query",
+            "name": "id"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "required": false,
+            "in": "query",
+            "name": "page"
+          },
+          {
+            "type": "integer",
+            "minimum": 1,
+            "required": false,
+            "in": "query",
+            "name": "limit"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "required": false,
+            "in": "query",
+            "name": "start_date"
+          },
+          {
+            "type": "string",
+            "format": "date-time",
+            "required": false,
+            "in": "query",
+            "name": "end_date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "custom_fields": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "created_at"
+                ]
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "custom_fields": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "parameters": [
+          {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "custom_fields": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "description"
+              ]
+            }
+          },
+          {
+            "type": "string",
+            "format": "uuid",
+            "required": true,
+            "in": "path",
+            "name": "id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "custom_fields": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "host": "localhost:3000",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ]
+}

@@ -1,0 +1,54 @@
+# IP Whitelist for admin access
+http:
+  middlewares:
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "OPTIONS"
+        accessControlAllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+          - "X-Requested-With"
+          - "Accept"
+        accessControlAllowOriginList:
+          - "http://{{ env "APP_DOMAIN" }}"
+          - "https://{{ env "APP_DOMAIN" }}"
+          - "http://{{ env "API_DOMAIN" }}"
+          - "https://{{ env "API_DOMAIN" }}"
+        accessControlAllowCredentials: true
+        accessControlMaxAge: 100
+        addVaryHeader: true
+        customRequestHeaders:
+          X-Requested-With: XMLHttpRequest
+
+    admin-ipwhitelist:
+      ipWhiteList:
+        sourceRange:
+          {{- range $ip := split (env "ADMIN_IPS") "," }}
+          - "{{ trim $ip }}/32"
+          {{- end }}
+          - 127.0.0.1/32  # Always allow localhost
+        ipStrategy:
+          depth: 1  # Look at the X-Forwarded-For header for the client IP
+          excludedIPs: []
+    
+    ratelimit:
+      rateLimit:
+        average: 100
+        period: 1s
+        burst: 50
+        sourceCriterion:
+          requestHeaderName: X-Forwarded-For
+
+    security-headers:
+      headers:
+        # customRequestHeaders:
+        #   X-Forwarded-Proto: http
+        customFrameOptionsValue: SAMEORIGIN
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: same-origin

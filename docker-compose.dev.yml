@@ -1,0 +1,112 @@
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.dashboard=true"            # Enable Traefik dashboard
+      - "--api.insecure=true"             # Expose the dashboard without authentication (only for dev)
+      - "--providers.docker=true"         # Enable Docker provider so Traefik reads labels
+      - "--providers.docker.exposedbydefault=false"  # Only services with traefik.enable=true are exposed
+      - "--entrypoints.web.address=:80"   # Define entrypoint “web” listening on port 80
+    ports:
+      - "8080:8080"  # Exposes Traefik dashboard on host:8080
+      - "80:80"      # Exposes HTTP entrypoint on host:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    networks:
+      - app-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    env_file:
+      - .env.development
+    environment:
+      - SERVER_NAME=${SERVER_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - DB_POOL_MAX=${DB_POOL_MAX}
+      - DB_IDLE_TIMEOUT_MS=${DB_IDLE_TIMEOUT_MS}
+      - DB_CONNECTION_TIMEOUT_MS=${DB_CONNECTION_TIMEOUT_MS}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW}
+      - SWAGGER_FRONTEND_HOST=${SWAGGER_FRONTEND_HOST}
+      - BACKEND_HOST=${BACKEND_HOST}
+      - BACKEND_PORT=${BACKEND_PORT}
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    labels:
+      - "traefik.enable=true"  
+        # Enable Traefik for this container so it will be considered for routing
+      - "traefik.http.routers.server-api.rule=Host(`${SERVER_NAME}`) && PathPrefix(`/api`)"
+        # Define a router named “server-api” matching requests where Host header equals SERVER_NAME (e.g., localhost) and path starts with /api
+      - "traefik.http.routers.server-api.entrypoints=web"
+        # Attach this router to the “web” entrypoint (port 80)
+      - "traefik.http.services.server.loadbalancer.server.port=${BACKEND_PORT}"
+        # Tell Traefik to forward matching requests to port 3000 inside the container (BACKEND_PORT=3000)
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+      - /app/dist
+    env_file:
+      - .env.development
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_DEV_SERVER_HOST=${VITE_DEV_SERVER_HOST}
+    depends_on:
+      - server
+    networks:
+      - app-network
+    labels:
+      - "traefik.enable=true"
+        # Enable Traefik routing for this container
+      - "traefik.http.routers.client.rule=Host(`${SERVER_NAME}`) && PathPrefix(`/`)"
+        # Define router “client”: match Host=SERVER_NAME and any path starting with / except those starting with /api
+        # E.g., if SERVER_NAME=localhost, browsing http://localhost/anything (not /api) goes to this service
+      - "traefik.http.routers.client.entrypoints=web"
+        # Attach this router to entrypoint “web” (port 80)
+      - "traefik.http.services.client.loadbalancer.server.port=${CLIENT_PORT}"
+        # Forward matching requests to port 5173 inside the container (CLIENT_PORT=5173)
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
